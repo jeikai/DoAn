@@ -1,24 +1,19 @@
 {
-    "name": "my-project",
-    "version": "1.0.0",
-    "description": "My DATN",
-    "engines": {
-      "node": "18.14.2"
-    },
-    "scripts": {
-      "start": "concurrently \"npm run start:client\" \"npm run start:server\"",
-      "start:client": "cd client && npm run dev",
-      "start:server": "cd server && npm start",
-      "build": "concurrently \"npm run build:client\" \"npm run build:server\"",
-      "build:client": "cd client && npm run build",
-      "build:server": "cd server && npm run build"
-
-    },
-    "dependencies": {
-     
-    },
-    "devDependencies": {
-     
-    }
+  "name": "my-project",
+  "version": "1.0.0",
+  "description": "My DATN",
+  "engines": {
+    "node": "18.14.2"
+  },
+  "scripts": {
+    "start": "concurrently \"npm run start:client\" \"npm run start:server\"",
+    "start:client": "cd client && npm run dev",
+    "start:server": "cd server && npm start",
+    "build": "concurrently \"npm run build:client\" \"npm run build:server\"",
+    "build:client": "cd client && npm run build",
+    "build:server": "cd server && npm run build"
+  },
+  "dependencies": {
+    "concurrently": "^6.5.1"
   }
-  
+}
