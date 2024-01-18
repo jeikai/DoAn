@@ -75,11 +75,75 @@
                 </div>
             </div>
         </div>
+        <UModal v-model="isOpen" prevent-close>
+            <UCard :ui="{
+                ring: '',
+                divide: 'divide-y divide-gray-100 dark:divide-gray-800',
+            }">
+                <template #header>
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+                            Add new chat
+                        </h3>
+                        <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1"
+                            @click="isOpen = false" />
+                    </div>
+                </template>
+                <UForm :schema="schema" :state="state" @submit="submit">
+                    <UFormGroup class="mb-4 flex-1" label="Add by email" name="listUser">
+                        <Select v-model:value="state.listUser"
+                            :options="studentOptions.map(t => ({ label: t.email, value: t._id }))" mode="tags"
+                            placeholder="Please select" class="w-100"></Select>
+                    </UFormGroup>
+                    <UButton type="submit"> Submit </UButton>
+                </UForm>
+            </UCard>
+        </UModal>
     </AdminLayout>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import AdminLayout from '~/layouts/AdminLayout.vue';
+import * as z from "zod";
+import type { FormSubmitEvent } from "@nuxt/ui/dist/runtime/types";
+import axios from 'axios';
+import { useToast } from 'vue-toast-notification';
+import 'vue-toast-notification/dist/theme-sugar.css';
+import { ref } from 'vue';
+import { Select } from 'ant-design-vue'
 
+const isOpen = ref(false);
+const toast = useToast();
 
+const schema = z.object({
+    listUser: z.array(z.string())
+});
+
+let studentOptions = ref([]);
+const state = ref({
+    listUser: [] as string[],
+});
+type Schema = z.output<typeof schema>;
+
+async function loadData() {
+    try {
+        const response_people = await axios.get("http://localhost:5000/api/user/getAllTeacherAndStudent");
+        studentOptions = response_people.data.userData
+            .map(person => ({ _id: person._id, email: person.email}))
+    } catch (error) {
+        toast.error('Error occcurred')
+    }
+}
+
+onMounted(loadData)
+
+async function submit(event: FormSubmitEvent<Schema>) {
+    console.log(event.data)
+    try {
+        
+    } catch (error) {
+        
+    }
+}
 </script>
+ 

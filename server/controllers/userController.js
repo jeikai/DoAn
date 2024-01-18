@@ -50,12 +50,11 @@ module.exports = {
                 phoneNumber,
                 DOB,
                 address,
-                department,
-                majors,
-                msv,
+                Department,
+                Majors,
                 role
             } = req.body;
-
+            console.log(req.body)
             if (!email || !password || !name) {
                 return res.status(400).json({
                     status: false,
@@ -74,23 +73,22 @@ module.exports = {
             }
 
             const hashedPassword = await bcrypt.hash(password, 10); // Hash the password
-            if( role == 'Admin') {
+            if (role == 'Admin') {
                 role = 2;
-            } else if( role == 'Teacher') {
+            } else if (role == 'Teacher') {
                 role = 1;
             } else {
                 role = 0;
             }
             const newUser = new User({
                 email,
-                password: hashedPassword, 
+                password: hashedPassword,
                 name,
                 phoneNumber,
                 DOB: new Date(DOB),
                 address,
-                department,
-                majors,
-                msv,
+                Department,
+                Majors,
                 role,
                 date_created: new Date()
             });
@@ -117,7 +115,7 @@ module.exports = {
         try {
             let userId = req.params.id;
             let updatedUser = req.body;
-            await User.findByIdAndUpdate(userId, updatedUser); 
+            await User.findByIdAndUpdate(userId, updatedUser);
 
             return res.status(200).json({
                 status: true,
@@ -136,7 +134,7 @@ module.exports = {
             let userId = req.params.id;
 
             await User.findByIdAndDelete(userId);
- 
+
             return res.status(200).json({
                 status: true,
                 message: "Xóa người dùng thành công"

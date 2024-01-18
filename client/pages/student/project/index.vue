@@ -156,7 +156,7 @@ async function loadData() {
         });
     } catch (error) {
         console.error(error);
-    } 
+    }
 }
 
 onMounted(loadData);

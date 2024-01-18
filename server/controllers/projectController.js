@@ -58,7 +58,7 @@ exports.updateProject = async function(req, res){
     }catch(err){
         return res.status(404).json({msg: 'error', data: err})
     }
-}
+} 
 
 exports.deleteProject = async function(req, res){
     const projectId = req.params.projectId

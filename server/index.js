@@ -8,9 +8,8 @@ const connectDB = require('./config/database');
 const errorMiddleware = require('./middleware/errorMiddleware')
 const { log } = require('console')
 const multer = require('multer');
-
-
-
+const admin = require('firebase-admin');
+const serviceAccount = require('./serviceAccountKey.json');
 
 dotenv.config();
 app.use(express.json());
@@ -21,14 +20,10 @@ app.use(
   })
   );  
 connectDB();
-// mongoose
-//   .connect(process.env.MONGO_URL)
-//   .then(() => {
-//     console.log("Connected");
-//   })
-//   .catch((err) => {
-//     console.log(err);
-//   });
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
 app.use('/uploads', express.static('uploads'));
 app.use(routers);
 
@@ -43,8 +38,6 @@ app.use(function(err, req, res, next){
   return res.status(500).send({ message: message });
 
 });
-
-// app.use(errorMiddleware)
 
 const server = app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

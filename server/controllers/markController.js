@@ -8,7 +8,7 @@ exports.addMark = async function (req, res) {
         const studentId = req.params.studentId
         const teacherId = req.params.teacherId
         const projectId = req.params.projectId
-
+        console.log(data)
         const projectType = await projectModel.getProjectByUserIdAndType(studentId, 1);
 
         const marks = await projectModel.listMark(projectId);
@@ -28,10 +28,15 @@ exports.addMark = async function (req, res) {
                 .filter(item => item.type === 0)
                 .map(item => item.mark);
 
-            const avgExecutionMark = executionMarks.reduce((sum, mark) => sum + mark, 0) / executionMarks.length;
-            const avgGuidanceMark = guidanceMarks.reduce((sum, mark) => sum + mark, 0) / guidanceMarks.length;
+            const avgExecutionMark = executionMarks.length > 0
+                ? executionMarks.reduce((sum, mark) => sum + mark, 0) / executionMarks.length
+                : 0;        //tính điểm thực hiện
 
-            const processMark = ((avgExecutionMark + 2 * avgGuidanceMark) / 3).toFixed(1);
+            const avgGuidanceMark = guidanceMarks.length > 0
+                ? guidanceMarks.reduce((sum, mark) => sum + mark, 0) / guidanceMarks.length
+                : 0; //tính điểm hướng dẫn
+
+            const processMark = ((avgExecutionMark + 2 * avgGuidanceMark) / 3).toFixed(1); //tính điểm quá trình
             if (existingProcessMark) {
                 await markModel.update(existingProcessMark._id, { mark: processMark });
             } else {
@@ -48,12 +53,7 @@ exports.addMark = async function (req, res) {
             let defenseMark;
             const defenseMarkType = 4;
             const existingDefenseMark = marks.find(item => item.type === defenseMarkType);
-
-            if (type2Marks.length > 0) {
-                defenseMark = type2Marks.reduce((sum, mark) => sum + mark.mark, 0).toFixed(1);
-            } else {
-                defenseMark = 0;
-            }
+            defenseMark = type2Marks.length > 0 ? (type2Marks.reduce((sum, mark) => sum + mark.mark, 0) / type2Marks.length).toFixed(1) : 0;
             if (existingDefenseMark) {
                 await markModel.update(existingDefenseMark._id, { mark: defenseMark });
             } else {
@@ -67,8 +67,8 @@ exports.addMark = async function (req, res) {
 
             const finalMarkType = 5;
             const existingFinalMark = marks.find(item => item.type === finalMarkType);
-            let finalMark = 0.3 * processMark + 0.7 * defenseMark;
-            if( existingFinalMark ) {
+            let finalMark = (0.3 * processMark + 0.7 * defenseMark).toFixed(1);
+            if (existingFinalMark) {
                 await markModel.update(existingFinalMark._id, { mark: finalMark });
             } else {
                 const newFinalMark = await markModel.create(teacherId, {
@@ -84,8 +84,13 @@ exports.addMark = async function (req, res) {
         if (checkMark.length >= 1) {
             return res.status(200).json({ state: 422, markData: checkMark })
         }
-
-        const newMark = await markModel.create(teacherId, data)
+        const newMark = await markModel.create(teacherId, {
+            mark: parseFloat(data.mark),
+            type: data.type,
+            teacherId: data.teacherId,
+            comment: data.comment,
+            date_created: new Date()
+        });
         if (!newMark) {
             return res.status(500).json({ message: 'error' })
         } else {

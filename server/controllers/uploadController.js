@@ -30,7 +30,7 @@ class UploadController {
       const projectId = req.params.projectId;
       const result = await uploadModel.deleteFilesByProjectId(projectId)
       res.status(200).json(result);
-    }catch (error) {
+    }catch (error) { 
       res.status(500).json(error);
   }
   }

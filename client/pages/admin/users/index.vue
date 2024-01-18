@@ -46,10 +46,11 @@ const people = ref<any[]>([{
   role: undefined
 }]);
 
-async function loadData() { 
+async function loadData() {
   try {
     const response = await axios.get('http://localhost:5000/api/user/getAllTeacherAndStudent');
-    people.value = response.data.userData.map(person => ({
+    const userData = response.data.userData || [];
+    people.value = userData.map(person => ({
       ...person,
       role: person.role === 1 ? 'Teacher' : 'Student'
     }));
@@ -57,7 +58,6 @@ async function loadData() {
     console.error(error);
   }
 }
-
 
 onMounted(loadData);
 
@@ -161,7 +161,7 @@ const state = ref({
   password: undefined,
   confirmPassword: undefined,
   role: roles[0],
-  department: study[0].department,
+  Department: study[0].department,
   Majors: study[0].major[0],
   DOB: undefined
 });
@@ -169,14 +169,14 @@ const state = ref({
 const departmentOptions = computed(() => study.map(dep => dep.department));
 
 const majorOptions = computed(() => {
-  const selecteddepartment = state.value.department;
+  const selecteddepartment = state.value.Department;
   const selecteddepartmentObj = study.find(dep => dep.department === selecteddepartment);
   return selecteddepartmentObj ? selecteddepartmentObj.major : [];
 });
 
 
 async function submit(event: FormSubmitEvent<Schema>) {
-  console.log(event.data);
+  console.log(event.data); 
   try {
     const response = await axios.post('http://localhost:5000/api/user/logup', event.data);
     const stateResponse = response.data.status;
@@ -265,8 +265,8 @@ async function submit(event: FormSubmitEvent<Schema>) {
                 <UFormGroup class="mb-4 flex-1" label="User role" name="role">
                   <USelect v-model="state.role" :options="roles" />
                 </UFormGroup>
-                <UFormGroup class="mb-4 flex-1" label="User department" name="department">
-                  <USelect v-model="state.department" :options="departmentOptions" />
+                <UFormGroup class="mb-4 flex-1" label="User department" name="Department">
+                  <USelect v-model="state.Department" :options="departmentOptions" />
                 </UFormGroup>
               </div>
               <UFormGroup class="mb-4 flex-1" label="User major" name="majors">

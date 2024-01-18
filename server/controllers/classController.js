@@ -1,6 +1,6 @@
 const classModel = require('../models/Class')
 const utility = require('../helper/utility')
-const Class = require('../models/Class')
+
 exports.create = async function(req, res){
     try{
         const data = req.body

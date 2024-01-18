@@ -1,2 +1,7 @@
 #npm
 node_modules/
+<<<<<<< HEAD
+package-lock.json
+=======
+package-lock.json
+>>>>>>> duc

@@ -15,3 +15,4 @@ api.put("/api/user/updateUser/:id", use(userController.updateUser))
 
 api.delete("/api/user/deleteUser/:id", use(userController.deleteUser)); 
 module.exports = api
+ 
