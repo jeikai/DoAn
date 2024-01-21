@@ -360,6 +360,9 @@
   }
 
   function formatTime(isoString) {
+    if (!isoString) {
+      return "Let's start the message!";
+    }
     const options = {
       year: 'numeric',
       month: 'long',
