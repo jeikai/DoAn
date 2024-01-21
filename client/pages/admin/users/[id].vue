@@ -50,7 +50,7 @@
                             {{ link.name }}
                         </NuxtLink>
                     </template>
-                </div>
+                </div> 
                 <NuxtPage />
             </div>
         </div>
@@ -121,7 +121,7 @@
 
         </template>
     </AdminLayout>
-</template>
+</template> 
 
 <script setup lang="ts">
 import AdminLayout from '~/layouts/AdminLayout.vue';

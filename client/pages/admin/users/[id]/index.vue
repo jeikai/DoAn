@@ -1,6 +1,6 @@
 <template>
   <div class="mt-4 px-4 py-8 border">
-    <h3 class="font-medium text-lg text-[#6f6b7d]">Project</h3>
+    <h3 class="font-medium text-lg text-[#6f6b7d]">Information</h3>
     <div>
       <div class="flex gap-4 justify-end mb-4">
         <UInput size="xl" v-model="table.q" color="white" variant="outline" name="input" placeholder="Search..."

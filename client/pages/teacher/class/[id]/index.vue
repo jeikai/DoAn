@@ -8,13 +8,14 @@
             </div>
             <UTable :columns="columns" :rows="filteredAndPagedRowsStudent" :sort="{ column: 'title' }">
                 <template #name-data="{ row }">
-                    <NuxtLink :to="{ name: 'teacher-user-id-classId', params: { id: row._id, classId: route.params.id } }">{{ row.name }}</NuxtLink>
+                    <NuxtLink :to="{ name: 'teacher-user-id-classId', params: { id: row._id, classId: route.params.id } }">
+                        {{ row.name }}</NuxtLink>
                 </template>
             </UTable>
             <div class="flex justify-end mt-4">
                 <UPagination v-model="table.page" :page-count="pageCount" :total="totalCountStudent" />
             </div>
-        </div> 
+        </div>
     </div>
     <div class="mt-4 px-4 py-8 border">
         <h3 class="font-medium text-lg text-[#6f6b7d]">Examination Board</h3>

@@ -58,8 +58,12 @@
                     <div class="mt-4">
                     </div>
                 </div>
-                <div v-if="!projectInfo.isDenied && !isDeadline" class="flex gap-4 my-4 m-auto">
-                    <UButton color="primary" variant="solid" size="xl" @click="isOpen = true">Edit</UButton>
+                <div class="flex gap-4 my-4 m-auto">
+                    <UButton v-if="!projectInfo.isDenied && !isDeadline" color="primary" variant="solid" size="xl"
+                        @click="isOpen = true">Edit</UButton>
+                    <UButton color="blue" variant="solid" size="xl" @click="isOpenViewMark = true">
+                        <Icon name="material-symbols:visibility" class="text-white" />
+                    </UButton>
                 </div>
             </div>
             <div class="flex-[2]">
@@ -121,6 +125,28 @@
                 </UModal>
             </div>
         </template>
+        <template>
+            <div>
+                <UModal v-model="isOpenViewMark" prevent-close>
+                    <UCard :ui="{
+                        ring: '',
+                        divide: 'divide-y divide-gray-100 dark:divide-gray-800',
+                    }">
+                        <template #header>
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+                                    {{ projectInfo.projectName }}
+                                </h3>
+                                <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1"
+                                    @click="isOpenViewMark = false" />
+                            </div>
+                        </template>
+                        <UTable :columns="columns" :rows="listViewMark" :sort="{ column: 'title' }">
+                        </UTable>
+                    </UCard>
+                </UModal>
+            </div>
+        </template>
     </StudentLayout>
 </template> 
 
@@ -135,7 +161,7 @@ import 'vue-toast-notification/dist/theme-sugar.css';
 import { Upload, Button } from 'ant-design-vue';
 import { UploadOutlined } from '@ant-design/icons-vue';
 import type { UploadChangeParam } from 'ant-design-vue';
-
+const isOpenViewMark = ref(false);
 const route = useRoute()
 const toast = useToast();
 const isOpen = ref(false);
@@ -178,7 +204,54 @@ const listMark = ref<any>({
     sumDefense: 0,
     final: 0
 });
-
+const listViewMark = ref([{
+    mark: 0,
+    type: 0,
+    comment: ''
+}]);
+const listOfType = [
+    {
+        "type": "Guidance",
+        "_id": 0
+    },
+    {
+        "type": "Execution",
+        "_id": 1
+    },
+    {
+        "type": "Defense",
+        "_id": 2
+    },
+    {
+        "type": "Process",
+        "_id": 3
+    },
+    {
+        "type": "Sum of defense",
+        "_id": 4
+    },
+    {
+        "type": "Final",
+        "_id": 5
+    },
+];
+const columns = [
+    {
+        key: "type",
+        label: "Type",
+        sortable: true,
+    },
+    {
+        key: "mark",
+        label: "Mark",
+        sortable: true,
+    },
+    {
+        key: "comment",
+        label: "Comment",
+        sortable: true,
+    },
+];
 async function loadData() {
     try {
         const userId = process.client ? localStorage.getItem('_id') : '';
@@ -196,6 +269,20 @@ async function loadData() {
             type: projectInfo.value.type,
             description: projectInfo.value.description
         }
+        if (projectInfo.type == 1) {
+            listViewMark.value = response_mark.data.map(markData => ({
+                ...markData,
+                type: getTypeLabel(markData.type)
+            }));
+        } else {
+            listViewMark.value = response_mark.data
+                .filter(markData => markData.type === 1)
+                .map(markData => ({
+                    ...markData,
+                    type: getTypeLabel(markData.type)
+                }));
+        }
+
         response_mark.data.forEach(markData => {
             switch (markData.type) {
                 case 0:
@@ -251,7 +338,7 @@ async function submit(event: FormSubmitEvent<Schema>) {
                         'Content-Type': 'multipart/form-data',
                     },
                 });
-                if( uploadFileResponse.data) {
+                if (uploadFileResponse.data) {
                     loadData();
                     isOpen.value = false;
                     toast.success("Update project and upload file successfully");
@@ -309,7 +396,9 @@ const isDeadline = computed(() => {
 
     return projectDeadline < currentDate;
 });
-
+function getTypeLabel(type) {
+    return listOfType.find(t => t._id === type)?.type || '';
+}
 const links = ref([
     { name: 'Students', path: 'student-project-id', url: `/student/project/${route.params.id}`, icon: 'material-symbols:person-check-rounded' },
 ])

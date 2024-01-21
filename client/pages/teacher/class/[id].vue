@@ -96,7 +96,7 @@ const formattedDOB = computed(() => {
     return '';
 });
 const links = ref([
-{ name: 'Students', path: 'teacher-class-id', url: `/teacher/class/${route.params.id}`, icon: 'material-symbols:person-check-rounded' },
+    { name: 'Students', path: 'teacher-class-id', url: `/teacher/class/${route.params.id}`, icon: 'material-symbols:person-check-rounded' },
 ])
 </script>
  

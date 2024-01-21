@@ -10,6 +10,8 @@ const upload = multer({ storage: storage });
 
 api.post("/api/upload/:projectId", upload.single('file'), use(uploadController.uploadFile))
 
+api.post("/api/uploadUser", upload.single('file'), use(uploadController.uploadUser))
+
 api.get("/api/upload/:projectId", use(uploadController.getFilesByProjectId))
 
 api.delete("/api/upload/:projectId", use(uploadController.deleteFilesByProjectId))

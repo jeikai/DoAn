@@ -6,9 +6,13 @@ import type { FormSubmitEvent } from "@nuxt/ui/dist/runtime/types";
 import axios from 'axios';
 import { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-sugar.css';
+import { Upload, Button } from 'ant-design-vue';
+import { UploadOutlined } from '@ant-design/icons-vue';
+import type { UploadChangeParam } from 'ant-design-vue';
 
 const toast = useToast();
-
+const isOpen = ref(false);
+const isOpenUpload = ref(false);
 const columns = [
   {
     key: "_id",
@@ -37,7 +41,10 @@ const columns = [
     sortable: true,
   }
 ];
-
+const fileList = ref([]);
+const headers = {
+  authorization: 'authorization-text',
+};
 const people = ref<any[]>([{
   _id: '',
   name: '',
@@ -54,6 +61,7 @@ async function loadData() {
       ...person,
       role: person.role === 1 ? 'Teacher' : 'Student'
     }));
+    console.log(people.value)
   } catch (error) {
     console.error(error);
   }
@@ -62,8 +70,9 @@ async function loadData() {
 onMounted(loadData);
 
 function downloadCsv(filename: string, csvData: string) {
+  const encodedData = '\ufeff' + encodeURIComponent(csvData);
   const element = document.createElement("a");
-  element.setAttribute("href", `data:text/csv;charset=utf-8,${encodeURIComponent(csvData)}`);
+  element.setAttribute("href", `data:text/csv;charset=utf-8,${encodedData}`);
   element.setAttribute("download", filename);
   element.style.display = "none";
 
@@ -74,11 +83,20 @@ function downloadCsv(filename: string, csvData: string) {
 
 async function exportToCsv() {
   try {
-    const csvData = people.value
-      .map(person => Object.values(person).map(value => String(value)).join(','))
-      .join('\n');
+    const headerRow = ['_id', 'email', 'name', 'phoneNumber', 'DOB', 'address', 'Department', 'Majors', 'role'];
 
-    downloadCsv('export.csv', csvData);
+    const csvData = people.value
+      .map(person => {
+        const rowData = headerRow.map(column => {
+          return person.hasOwnProperty(column) && person[column] !== undefined && person[column] !== null
+            ? String(person[column])
+            : ' ';
+        });
+
+        return rowData.join(',');
+      });
+    const fullCsvData = [headerRow.join(','), ...csvData].join('\n');
+    downloadCsv('export.csv', fullCsvData);
   } catch (error) {
     console.error(error);
   }
@@ -89,7 +107,7 @@ const table = ref({
   page: 1,
 });
 
-const pageCount = 10;
+const pageCount = 5;
 const filteredAndPagedRows = computed(() => {
   let filteredRows = people.value;
   if (table.value.q) {
@@ -111,7 +129,22 @@ const filteredAndPagedRows = computed(() => {
 
 const totalCount = computed(() => people.value.length);
 
-const isOpen = ref(false);
+const handleChange = (info: UploadChangeParam) => {
+  if (info.file.status !== 'uploading') {
+    console.log(info.file, info.fileList);
+  }
+  if (info.file.status === 'done') {
+    const allowedFileTypes = ['application/csv', 'application/excel', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv'];
+    if (!allowedFileTypes.includes(info.file.type)) {
+      toast.error(`Only CSV, Excel files are allowed.`);
+      fileList.value = fileList.value.filter(file => file.uid !== info.file.uid);
+      return;
+    }
+    toast.success(`${info.file.name} file uploaded successfully`);
+  } else if (info.file.status === 'error') {
+    toast.error(`${info.file.name} file upload failed.`);
+  }
+};
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -174,9 +207,8 @@ const majorOptions = computed(() => {
   return selecteddepartmentObj ? selecteddepartmentObj.major : [];
 });
 
-
 async function submit(event: FormSubmitEvent<Schema>) {
-  console.log(event.data); 
+  console.log(event.data);
   try {
     const response = await axios.post('http://localhost:5000/api/user/logup', event.data);
     const stateResponse = response.data.status;
@@ -192,9 +224,27 @@ async function submit(event: FormSubmitEvent<Schema>) {
     toast.error("An error occurred during form submission.");
   }
 }
-
+async function uploadFile(event: FormSubmitEvent<Schema>) {
+  console.log(event.data);
+  try {
+    const formData = new FormData();
+    formData.append('file', fileList.value[0]?.originFileObj);
+    console.log(formData)
+    const response = await axios.post('http://localhost:5000/api/uploadUser', formData);
+    // const stateResponse = response.data.status;
+    // if (stateResponse) {
+    //   isOpen.value = false;
+    //   toast.success("Register account successfully.");
+    //   loadData(); 
+    // } else {
+    //   toast.error(response.data.message);
+    // }
+  } catch (error) {
+    console.error("Error during form submission:", error);
+    toast.error("An error occurred during form submission.");
+  }
+}
 </script>
-
 
 <template>
   <AdminLayout>
@@ -204,7 +254,8 @@ async function submit(event: FormSubmitEvent<Schema>) {
           icon="i-heroicons-magnifying-glass-20-solid" />
 
         <UButton color="indigo" variant="outline" label="Export" icon="i-heroicons-pencil-square" @click="exportToCsv" />
-
+        <UButton color="blue" variant="outline" label="Upload file" icon="i-heroicons-arrow-up-tray"
+          @click="isOpenUpload = true" />
         <UButton color="primary" variant="solid" label="Add new user" icon="i-heroicons-pencil-square"
           @click="isOpen = true" />
       </div>
@@ -272,6 +323,39 @@ async function submit(event: FormSubmitEvent<Schema>) {
               <UFormGroup class="mb-4 flex-1" label="User major" name="majors">
                 <USelect v-model="state.Majors" :options="majorOptions" />
               </UFormGroup>
+              <UButton type="submit"> Submit </UButton>
+            </UForm>
+          </UCard>
+        </UModal>
+      </div>
+    </template>
+    <template>
+      <div>
+        <UModal v-model="isOpenUpload" prevent-close>
+          <UCard :ui="{
+            ring: '',
+            divide: 'divide-y divide-gray-100 dark:divide-gray-800',
+          }">
+            <template #header>
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+                  Upload file
+                </h3>
+                <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1"
+                  @click="isOpenUpload = false" />
+              </div>
+            </template>
+            <UForm :state="fileList" @submit="uploadFile">
+              <div class="flex gap-4">
+                <UFormGroup class="mb-4 flex-1" label="File">
+                  <Upload v-model:file-list="fileList" name="file" :headers="headers" @change="handleChange">
+                    <Button>
+                      <UploadOutlined></UploadOutlined>
+                      Click to Upload
+                    </Button>
+                  </Upload>
+                </UFormGroup>
+              </div>
               <UButton type="submit"> Submit </UButton>
             </UForm>
           </UCard>

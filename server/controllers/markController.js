@@ -30,13 +30,13 @@ exports.addMark = async function (req, res) {
 
             const avgExecutionMark = executionMarks.length > 0
                 ? executionMarks.reduce((sum, mark) => sum + mark, 0) / executionMarks.length
-                : 0;        //tính điểm thực hiện
+                : 0;
 
             const avgGuidanceMark = guidanceMarks.length > 0
                 ? guidanceMarks.reduce((sum, mark) => sum + mark, 0) / guidanceMarks.length
-                : 0; //tính điểm hướng dẫn
+                : 0;
 
-            const processMark = ((avgExecutionMark + 2 * avgGuidanceMark) / 3).toFixed(1); //tính điểm quá trình
+            const processMark = ((avgExecutionMark + 2 * avgGuidanceMark) / 3).toFixed(1);
             if (existingProcessMark) {
                 await markModel.update(existingProcessMark._id, { mark: processMark });
             } else {

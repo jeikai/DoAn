@@ -11,67 +11,34 @@
                         @click="isOpen = true" />
                 </div>
                 <div class="px-2 w-full h-[75vh] overflow-x-auto">
-                    <div class="flex gap-4 p-3 mb-2 rounded-md">
+                    <div class="flex gap-4 p-3 mb-2 rounded-md" v-for="chat in chatGroup">
                         <div>
                             <UAvatar chip-color="primary" chip-text="" chip-position="bottom-right" size="md"
                                 src="https://avatars.githubusercontent.com/u/739984?v=4" alt="Avatar" />
                         </div>
-                        <div class="flex-1">
-                            <div class="flex justify-between">
-                                <h3 class="font-semibold">Name</h3>
-                                <span class="text-sm text-gray-500">Time</span>
+                        <NuxtLink :to="`/admin/messages/${chat.id}`" class="text-black no-underline">
+                            <div class="flex-1">
+                                <div class="flex justify-between">
+                                    <h3 class="font-semibold">{{ chat.chatName }}</h3>
+                                </div>
+                                <p class="w-40 truncate">
+                                    {{ chat.lastMessage }}
+                                </p>
+                                <p class="text-sm text-gray-500">
+                                    {{ formatTime(chat.lastTime) }}
+                                </p>
                             </div>
-                            <p class="w-40 truncate">
-                                Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eligendi, a.
-                            </p>
-                        </div>
+                        </NuxtLink>
                     </div>
-
                 </div>
             </div>
-            <div class="w-2/3">
-                <div class="header flex gap-4 items-center h-14 border-b px-4">
-                    <div class="flex-1">
-                        <div class="flex gap-4 items-center">
-                            <UAvatar chip-color="primary" chip-text="" chip-position="bottom-right" size="md"
-                                src="https://avatars.githubusercontent.com/u/739984?v=4" alt="Avatar" />
-                            <div>
-                                <h3 class="font-semibold">Name</h3>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="px-4 w-full bg-[#f8f7fa]">
-                    <ul class="h-[calc(75vh-80px)] overflow-x-auto flex flex-col-reverse py-4">
-                        <li class="flex gap-4 mb-4">
-                            <div>
-                                <UAvatar size="md" src="https://avatars.githubusercontent.com/u/739984?v=4" alt="Avatar" />
-                            </div>
-                            <div class="w-3/4">
-                                <p class="bg-white shadow-md p-4 mb-2">Lorem ipsum dolor sit amet, consectetur adipisicing
-                                    elit. Quod distinctio tenetur cum praesentium, cumque exercitationem dolorum corrupti
-                                    assumenda molestiae temporibus quidem incidunt, necessitatibus, sapiente dignissimos ea!
-                                    Et deserunt repellat perferendis?</p>
-                                <p class="text-gray-500">Time</p>
-                            </div>
-                        </li>
-                        <li class="flex gap-4 mb-4 justify-end">
-                            <div class="w-3/4">
-                                <p class="bg-white shadow-md p-4 mb-2">Lorem ipsum dolor sit amet, consectetur adipisicing
-                                    elit. Quod distinctio tenetur cum praesentium, cumque exercitationem dolorum corrupti
-                                    assumenda molestiae temporibus quidem incidunt, necessitatibus, sapiente dignissimos ea!
-                                    Et deserunt repellat perferendis?</p>
-                                <p class="text-gray-500">Time</p>
-                            </div>
-                            <div>
-                                <UAvatar size="md" src="https://avatars.githubusercontent.com/u/739984?v=4" alt="Avatar" />
-                            </div>
-                        </li>
-                    </ul>
-                    <div class="flex items-center gap-4 p-4 h-20">
-                        <UInput class="flex-1" size="xl" name="input" placeholder="Type your message here" />
-                        <UButton color="primary" variant="solid" label="Send" size="xl" />
-                    </div>
+            <div class="w-2/3 flex-container">
+                <div className="welcome_container">
+                    <img src="../../../assets/images/heart.gif" />
+                    <h1>
+                        WELCOME
+                    </h1>
+                    <h3>Please select a chat to Start messaging.</h3>
                 </div>
             </div>
         </div>
@@ -90,6 +57,10 @@
                     </div>
                 </template>
                 <UForm :schema="schema" :state="state" @submit="submit">
+
+                    <UFormGroup class="mb-4 flex-1" label="Name of chat" name="chatName">
+                        <UInput v-model="state.chatName" placeholder="Group name" />
+                    </UFormGroup>
                     <UFormGroup class="mb-4 flex-1" label="Add by email" name="listUser">
                         <Select v-model:value="state.listUser"
                             :options="studentOptions.map(t => ({ label: t.email, value: t._id }))" mode="tags"
@@ -98,52 +69,134 @@
                     <UButton type="submit"> Submit </UButton>
                 </UForm>
             </UCard>
-        </UModal>
+        </UModal> 
     </AdminLayout>
 </template>
 
 <script setup lang="ts">
-import AdminLayout from '~/layouts/AdminLayout.vue';
+import AdminLayout from '../layouts/AdminLayout.vue';
+import { ref, onMounted } from 'vue';
 import * as z from "zod";
-import type { FormSubmitEvent } from "@nuxt/ui/dist/runtime/types";
 import axios from 'axios';
 import { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-sugar.css';
-import { ref } from 'vue';
 import { Select } from 'ant-design-vue'
+import { database, ref as dbRef, push, onValue } from '~/firebase';
+import type { FormSubmitEvent } from "@nuxt/ui/dist/runtime/types";
 
 const isOpen = ref(false);
 const toast = useToast();
 
 const schema = z.object({
-    listUser: z.array(z.string())
-});
-
-let studentOptions = ref([]);
-const state = ref({
-    listUser: [] as string[],
+    listUser: z.array(z.string()).min(1, "Please select at least one user"),
 });
 type Schema = z.output<typeof schema>;
+const MAX_CHAT_NAME_LENGTH = 15;
+let studentOptions = ref([]);
+const state = ref({
+    chatName: '',
+    listUser: [] as string[],
+});
+
+const chatGroup = ref([])
 
 async function loadData() {
     try {
-        const response_people = await axios.get("http://localhost:5000/api/user/getAllTeacherAndStudent");
-        studentOptions = response_people.data.userData
-            .map(person => ({ _id: person._id, email: person.email}))
+        const userId = process.client ? localStorage.getItem('_id') : '';
+        const responsePeople = await axios.get("http://localhost:5000/api/user/getAllTeacherAndStudent");
+        studentOptions.value = responsePeople.data.userData
+            .map(person => ({ _id: person._id, email: person.email, name: person.name }));
+
+        onValue(dbRef(database, "chat"), (data) => {
+            chatGroup.value = [];
+            data.forEach((d) => {
+                const chat = d.val();
+                chat.id = d.key;
+                chat.chatName = shortenString(chat.chatName, MAX_CHAT_NAME_LENGTH);
+
+                if (chat.listUser && chat.listUser.includes(userId)) {
+                    if (chat.listMessage && Object.keys(chat.listMessage).length > 0) {
+                        const lastMessageKey = Object.keys(chat.listMessage).pop();
+                        chat.lastMessage = chat.listMessage[lastMessageKey].message;
+                        chat.lastTime = chat.listMessage[lastMessageKey].time;
+                    } else {
+                        chat.lastMessage = null;
+                        chat.lastTime = null;
+                    }
+
+                    chatGroup.value.push(chat);
+                }
+            });
+        });
+        console.log(chatGroup);
     } catch (error) {
-        toast.error('Error occcurred')
+        toast.error('Error occurred');
     }
 }
 
-onMounted(loadData)
+onMounted(loadData);
 
 async function submit(event: FormSubmitEvent<Schema>) {
-    console.log(event.data)
     try {
-        
+        const userId = process.client ? localStorage.getItem('_id') : '';
+
+        const selectedUsers = event.data.listUser;
+
+        if (!selectedUsers.includes(userId)) {
+            selectedUsers.push(userId);
+        }
+
+        const newChat = {
+            chatName: event.data.chatName,
+            listUser: selectedUsers,
+            listMessage: []
+        };
+ 
+        await push(dbRef(database, "chat"), newChat);
+
+        toast.success('Chat created successfully!');
+        isOpen.value = false; 
     } catch (error) {
-        
+        console.log(error);
+        toast.error('Error creating chat');
     }
 }
+
+
+function shortenString(str, maxLength) {
+    return str.length > maxLength ? str.substring(0, maxLength - 3) + '...' : str;
+}
+
+function formatTime(isoString) {
+    const options = {
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+    };
+
+    return new Date(isoString).toLocaleString(undefined, options);
+}
 </script>
- 
+
+<style>
+.flex-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    margin: auto;
+}
+
+.welcome_container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: black;
+}
+
+img {
+    height: 10rem;
+}
+</style>

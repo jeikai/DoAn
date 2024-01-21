@@ -4,7 +4,6 @@ const utility = require('../helper/utility')
 exports.create = async function(req, res){
     try{
         const data = req.body
-        utility.validate(data, ['className'])
         const classes = await classModel.get()
         const checkClass = classes.filter(item => item.className === data.className)
         if (checkClass.length > 0 ) {

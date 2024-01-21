@@ -85,7 +85,10 @@ import type { UploadChangeParam } from 'ant-design-vue';
 const toast = useToast();
 
 const isOpen = ref(false);
-
+const fileList = ref([]);
+const headers = {
+    authorization: 'authorization-text',
+};
 const columns = [
     {
         key: "projectName",
@@ -237,12 +240,6 @@ const handleChange = (info: UploadChangeParam) => {
     } else if (info.file.status === 'error') {
         toast.error(`${info.file.name} file upload failed.`);
     }
-};
-
-
-const fileList = ref([]);
-const headers = {
-    authorization: 'authorization-text',
 };
 
 const table = ref({
