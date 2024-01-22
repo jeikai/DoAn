@@ -16,4 +16,4 @@ api.get("/api/upload/:projectId", use(uploadController.getFilesByProjectId))
 
 api.delete("/api/upload/:projectId", use(uploadController.deleteFilesByProjectId))
 
-module.exports = api 
+module.exports = api

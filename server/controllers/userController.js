@@ -12,7 +12,7 @@ module.exports = {
 
             if (!email || !password) {
                 return res.status(200).json({
-                    status: false,
+                    status: false, 
                     message: "Không được để trống"
                 });
             } else {
@@ -54,7 +54,6 @@ module.exports = {
                 Majors,
                 role
             } = req.body;
-            console.log(req.body)
             if (!email || !password || !name) {
                 return res.status(400).json({
                     status: false,
