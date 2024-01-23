@@ -1,12 +1,12 @@
-const csv = require('csv-parser')
-const fs = require('fs')
+const csv = require('csv-parser');
+const fs = require('fs');
 const uploadModel = require('../models/Upload');
 const stream = require('stream');
 
 class UploadController {
   async uploadFile(req, res) {
     try {
-      const projectId = req.params.projectId
+      const projectId = req.params.projectId;
       const file = req.file;
       const result = await uploadModel.uploadFile(file, projectId);
       res.status(200).json(result);
@@ -30,7 +30,7 @@ class UploadController {
   async deleteFilesByProjectId(req, res) {
     try {
       const projectId = req.params.projectId;
-      const result = await uploadModel.deleteFilesByProjectId(projectId)
+      const result = await uploadModel.deleteFilesByProjectId(projectId);
       res.status(200).json(result);
     } catch (error) {
       res.status(500).json(error);
@@ -47,12 +47,15 @@ class UploadController {
       const fileBuffer = req.file.buffer;
       const bufferStream = new stream.PassThrough();
       bufferStream.end(fileBuffer);
-      bufferStream.pipe(csv({}))
+      bufferStream
+        .pipe(csv({}))
         .on('data', (data) => result.push(data))
         .on('end', () => {
           console.log(result);
-          res.status(200).json({ message: 'File uploaded successfully', data: result });
-        });
+          res
+            .status(200)
+            .json({ message: 'File uploaded successfully', data: result });
+        }); 
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Internal Server Error' });
