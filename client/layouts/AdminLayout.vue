@@ -9,7 +9,7 @@
             <div class="col-span-9 pr-4">
                 <AdminHeader />
                 <div class="mt-8">
-                    <slot />
+                    <slot /> 
                 </div>
             </div>
         </div>

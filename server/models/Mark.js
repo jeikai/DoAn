@@ -8,7 +8,7 @@ const MarkSchema = new Schema({
     teacherId : {type: mongoose.Schema.Types.ObjectId, ref: 'User', default: ''},
     comment: { type: String, default: ''},
     date_created: Date
-}) 
+})
 
 const Mark = mongoose.model('Mark', MarkSchema, 'marks')
 exports.schema = Mark
