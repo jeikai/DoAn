@@ -243,7 +243,7 @@ const state = ref({
 })
 const mark = ref({
     mark: 0,
-    type: isExamination ? 2 : 1,
+    type: isExamination.value == true ? 2 : 1,
     comment: ''
 });
 const typeOptions = [
@@ -312,9 +312,11 @@ async function loadData() {
         const response_file = await axios.get(`http://localhost:5000/api/upload/${id}`);
         const response_class = await axios.get(`http://localhost:5000/api/class/getDetail/${classId}`);
         const response_mark = await axios.get(`http://localhost:5000/api/mark/${id}`)
+        console.log(response_class)
         if (teacherId != response_class.data.teacherId._id) {
             isExamination.value = true;
         }
+        console.log(isExamination)
         file.value = response_file.data[0];
         const projectData = response.data[0];
         projectInfo.value = {
@@ -400,19 +402,16 @@ async function submitMark(event: FormSubmitEvent<Schema>) {
         event.data.mark = parseFloat(event.data.mark);
         console.log(event.data)
         const response_mark = await axios.post(`http://localhost:5000/api/mark/${teacherId}/${studentId}/${projectId}`, event.data, { headers });
-        if (response_mark.data.state == 422) {
-            console.log(event.data, mark)
-            const response_updateMark = await axios.put(`http://localhost:5000/api/mark/${response_mark.data.markData[0]._id}`, event.data, { headers });
-            if (response_updateMark.data) {
-                loadData()
-                toast.success('Update mark successfully');
-                isOpenMark.value = false;
-            }
-        }
-        else if (response_mark.data) {
+        if (response_mark.data.state == 0) {
             loadData()
             toast.success('Mark successfully');
             isOpenMark.value = false;
+        } else if (response_mark.data.state == 1) {
+            loadData()
+            toast.success('Update mark successfully');
+            isOpenMark.value = false;
+        } else {
+            toast.error('Mark fail');
         }
     } catch (error) {
         console.log(error)

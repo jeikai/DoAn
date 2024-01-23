@@ -12,7 +12,7 @@
                     <Icon 
                             v-if="link.icon" 
                             :name="link.icon" 
-                            class="mr-0.5 mt-[2px]" 
+                            class="mr-0.5 mt-[2px]"  
                             size="25"
                         /> 
                     <span>
@@ -32,7 +32,7 @@ const links = ref([
     { name: 'Users', url: '/admin/users', icon: 'material-symbols:groups-2' },
     { name: 'Messages', url: '/admin/messages', icon: 'material-symbols:chat-outline' },
     { name: 'Class', url: '/admin/class', icon: 'material-symbols:chat-outline' },
-    // { name: 'Settings', url: '/admin/setting', icon: 'material-symbols:settings' },
+    { name: 'Meeting', url: '/admin/meeting', icon: 'material-symbols:videocam' },
 ])
 
 </script>
