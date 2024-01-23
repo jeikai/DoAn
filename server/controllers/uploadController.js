@@ -26,8 +26,7 @@ function processUserData(data) {
     entry.role = convertRoleToNumber(entry.role);
 
     const cleanedName = entry.name.replace(/\s/g, '');
-    entry.password = `${cleanedName}_${entry.phoneNumber}`;
-
+    entry.password = `${cleanedName}_${entry.phonenumber}`;
     return entry;
   });
 }
@@ -161,7 +160,7 @@ class UploadController {
             data.email = data[email];
             delete data[email];
             result.push(data);
-          })
+          }) 
           .on('end', () => {
             resolve(result);
           })
@@ -174,6 +173,7 @@ class UploadController {
         const validatedData = validateUserData(await processedDataPromise);
         const processedData = processUserData(validatedData);
         for (const entry of processedData) {
+          console.log(entry)
           await createUser(entry);
         }
         res.status(200).json({ status: 0, data: processedData });
