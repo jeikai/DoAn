@@ -231,14 +231,14 @@ async function uploadFile(event: FormSubmitEvent<Schema>) {
     formData.append('file', fileList.value[0]?.originFileObj);
     console.log(formData)
     const response = await axios.post('http://localhost:5000/api/uploadUser', formData);
-    // const stateResponse = response.data.status;
-    // if (stateResponse) {
-    //   isOpen.value = false;
-    //   toast.success("Register account successfully.");
-    //   loadData(); 
-    // } else {
-    //   toast.error(response.data.message);
-    // }
+    const stateResponse = response.data;
+    if (stateResponse.status == 0) {
+      isOpenUpload.value = false;
+      toast.success("Register account successfully.");
+      loadData();
+    } else {
+      toast.error(response.data.error);
+    }
   } catch (error) {
     console.error("Error during form submission:", error);
     toast.error("An error occurred during form submission.");
