@@ -36,7 +36,7 @@
                     <div v-if="projectInfo.type == 1 && isExamination == true">
                         <div class="mt-4">
                             <span class="font-medium text-sm">Defense Score: </span>
-                            <span>{{ listMark.defense }}</span>
+                            <span>{{ listMark.sumDefense }}</span>
                         </div>
                     </div>
                     <div v-else-if="projectInfo.type == 1">
@@ -206,7 +206,7 @@ const toast = useToast();
 const isOpenAccept = ref(false);
 const isOpenMark = ref(false);
 const isOpenViewMark = ref(false);
-const isExamination = ref(false);
+let isExamination = ref(false);
 const projectInfo = ref({
     _id: '',
     projectName: '',
@@ -243,7 +243,7 @@ const state = ref({
 })
 const mark = ref({
     mark: 0,
-    type: isExamination.value == true ? 2 : 1,
+    type: 1,
     comment: ''
 });
 const typeOptions = [
@@ -312,11 +312,10 @@ async function loadData() {
         const response_file = await axios.get(`http://localhost:5000/api/upload/${id}`);
         const response_class = await axios.get(`http://localhost:5000/api/class/getDetail/${classId}`);
         const response_mark = await axios.get(`http://localhost:5000/api/mark/${id}`)
-        console.log(response_class)
         if (teacherId != response_class.data.teacherId._id) {
             isExamination.value = true;
+            mark.value.type = 2;
         }
-        console.log(isExamination)
         file.value = response_file.data[0];
         const projectData = response.data[0];
         projectInfo.value = {
@@ -342,7 +341,7 @@ async function loadData() {
                     }
                     break;
                 case 2:
-                    if (markData.teacherId == teacherId && isExamination) {
+                    if (markData.teacherId == teacherId && isExamination.value) {
                         listMark.value.defense = markData.mark;
                         mark.value.mark = markData.mark;
                         mark.value.comment = markData.comment;
@@ -361,7 +360,7 @@ async function loadData() {
                     break;
             }
         });
-        console.log(mark, listMark)
+        console.log(mark)
     } catch (error) {
         console.error(error);
     }
@@ -393,6 +392,7 @@ async function submitMark(event: FormSubmitEvent<Schema>) {
         'Content-Type': 'application/json'
     };
     try {
+        console.log(event.data)
         const selectedType = typeOptions.find((t) => t._id == event.data.type);
         if (selectedType) {
             event.data.type = selectedType._id;

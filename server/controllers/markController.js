@@ -8,17 +8,18 @@ exports.addMark = async function (req, res) {
         const studentId = req.params.studentId
         const teacherId = req.params.teacherId
         const projectId = req.params.projectId
-        console.log(data)
         const projectType = await projectModel.getProjectByUserIdAndType(studentId, 1);
         const marks = await projectModel.listMark(projectId);
 
         const checkMark = marks.filter(item => item.type === data.type && item.teacherId.toString() == teacherId);
         if (checkMark.length >= 1) {
-            const markId = checkMark.id;
+            console.log(checkMark)
+            const markId = checkMark[0]._id;
             const result = await markModel.update(markId, data);
+            const updatedMarks = await projectModel.listMark(projectId);
             if (projectType) {
                 const processMarkType = 3;
-                const existingProcessMark = marks.find(item => item.type === processMarkType);
+                const existingProcessMark = updatedMarks.find(item => item.type === processMarkType);
                 const project = await projectModel.getApprovedProjectsByUserId(studentId);
                 const marksProject1 = await projectModel.listMark(project[0]._id);
                 const marksProject2 = await projectModel.listMark(project[1]._id);
@@ -41,14 +42,14 @@ exports.addMark = async function (req, res) {
                 await markModel.update(existingProcessMark._id, { mark: processMark });
 
                 const defenseMarkType = 4;
-                const type2Marks = marks.filter(item => item.type === 2);
+                const type2Marks = updatedMarks.filter(item => item.type === 2);
                 let defenseMark;
-                const existingDefenseMark = marks.find(item => item.type === defenseMarkType);
+                const existingDefenseMark = updatedMarks.find(item => item.type === defenseMarkType);
                 defenseMark = type2Marks.length > 0 ? (type2Marks.reduce((sum, mark) => sum + mark.mark, 0) / type2Marks.length).toFixed(1) : 0;
                 await markModel.update(existingDefenseMark._id, { mark: defenseMark });
 
                 const finalMarkType = 5;
-                const existingFinalMark = marks.find(item => item.type === finalMarkType);
+                const existingFinalMark = updatedMarks.find(item => item.type === finalMarkType);
                 let finalMark = (0.3 * processMark + 0.7 * defenseMark).toFixed(1);
                 await markModel.update(existingFinalMark._id, { mark: finalMark });
             }
@@ -60,9 +61,10 @@ exports.addMark = async function (req, res) {
             comment: data.comment,
         });
         if (projectType) {
+            const updatedMarks = await projectModel.listMark(projectId);
             let processMark = 0;
             const processMarkType = 3;
-            const existingProcessMark = marks.find(item => item.type === processMarkType);
+            const existingProcessMark = updatedMarks.find(item => item.type === processMarkType);
             const project = await projectModel.getApprovedProjectsByUserId(studentId);
             const marksProject1 = await projectModel.listMark(project[0]._id);
             const marksProject2 = await projectModel.listMark(project[1]._id);
@@ -96,9 +98,10 @@ exports.addMark = async function (req, res) {
             }
 
             let defenseMark = 0;
-            const type2Marks = marks.filter(item => item.type === 2);
+            const type2Marks = updatedMarks.filter(item => item.type === 2);
+            console.log(type2Marks)
             const defenseMarkType = 4;
-            const existingDefenseMark = marks.find(item => item.type === defenseMarkType);
+            const existingDefenseMark = updatedMarks.find(item => item.type === defenseMarkType);
             defenseMark = type2Marks.length > 0 ? (type2Marks.reduce((sum, mark) => sum + mark.mark, 0) / type2Marks.length).toFixed(1) : 0;
             if (existingDefenseMark) {
                 await markModel.update(existingDefenseMark._id, { mark: defenseMark });
@@ -111,9 +114,8 @@ exports.addMark = async function (req, res) {
                 await projectModel.addMark(projectId, newDefenseMark._id);
             }
 
-
             const finalMarkType = 5;
-            const existingFinalMark = marks.find(item => item.type === finalMarkType);
+            const existingFinalMark = updatedMarks.find(item => item.type === finalMarkType);
             let finalMark = (0.3 * processMark + 0.7 * defenseMark).toFixed(1);
             if (existingFinalMark) {
                 await markModel.update(existingFinalMark._id, { mark: finalMark });
