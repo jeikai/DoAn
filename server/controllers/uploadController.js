@@ -1,15 +1,24 @@
-const csv = require('csv-parser')
-const fs = require('fs')
+const csv = require('csv-parser');
+const fs = require('fs');
 const uploadModel = require('../models/Upload');
-const User = require("../models/User");
+const User = require('../models/User');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
 const stream = require('stream');
-const cryptoJS = require("crypto-js");
+const cryptoJS = require('crypto-js');
 
 function validateUserData(data) {
   return data.map((entry) => {
-    const requiredFields = ['email', 'name', 'phoneNumber', 'DOB', 'address', 'Department', 'Majors', 'role'];
+    const requiredFields = [
+      'email',
+      'name',
+      'phoneNumber',
+      'DOB',
+      'address',
+      'Department',
+      'Majors',
+      'role',
+    ];
     for (const field of requiredFields) {
       if (!entry[field]) {
         throw new Error(`Field '${field}' is required for each entry`);
@@ -67,18 +76,18 @@ const createUser = async (userData) => {
       address,
       department,
       majors,
-      role
+      role,
     } = userData;
     if (!email || !password || !name) {
-      throw new Error("Vui lòng cung cấp email, password và tên");
+      throw new Error('Vui lòng cung cấp email, password và tên');
     }
 
     let existingUser = await User.findOne({
-      email: email
+      email: email,
     });
 
     if (existingUser) {
-      throw new Error("Email đã được sử dụng");
+      throw new Error('Email đã được sử dụng');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -92,16 +101,16 @@ const createUser = async (userData) => {
       department,
       majors,
       role,
-      date_created: new Date()
+      date_created: new Date(),
     });
 
     await newUser.save();
 
     return {
       status: true,
-      message: "Đăng ký thành công",
+      message: 'Đăng ký thành công',
       data: userData,
-      user: newUser
+      user: newUser,
     };
   } catch (error) {
     throw error;
@@ -110,7 +119,7 @@ const createUser = async (userData) => {
 class UploadController {
   async uploadFile(req, res) {
     try {
-      const projectId = req.params.projectId
+      const projectId = req.params.projectId;
       const file = req.file;
       const result = await uploadModel.uploadFile(file, projectId);
       res.status(200).json(result);
@@ -134,7 +143,7 @@ class UploadController {
   async deleteFilesByProjectId(req, res) {
     try {
       const projectId = req.params.projectId;
-      const result = await uploadModel.deleteFilesByProjectId(projectId)
+      const result = await uploadModel.deleteFilesByProjectId(projectId);
       res.status(200).json(result);
     } catch (error) {
       res.status(500).json(error);
@@ -160,7 +169,7 @@ class UploadController {
             data.email = data[email];
             delete data[email];
             result.push(data);
-          }) 
+          })
           .on('end', () => {
             resolve(result);
           })
@@ -173,7 +182,6 @@ class UploadController {
         const validatedData = validateUserData(await processedDataPromise);
         const processedData = processUserData(validatedData);
         for (const entry of processedData) {
-          console.log(entry)
           await createUser(entry);
         }
         res.status(200).json({ status: 0, data: processedData });
