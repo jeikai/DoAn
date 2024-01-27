@@ -35,8 +35,7 @@ function processUserData(data) {
     entry.role = convertRoleToNumber(entry.role);
 
     const cleanedName = entry.name.replace(/\s/g, '');
-    entry.password = `${cleanedName}_${entry.phoneNumber}`;
-
+    entry.password = `${cleanedName}_${entry.phonenumber}`;
     return entry;
   });
 }
@@ -161,15 +160,35 @@ class UploadController {
       const fileBuffer = req.file.buffer;
       const bufferStream = new stream.PassThrough();
       bufferStream.end(fileBuffer);
-      bufferStream
-        .pipe(csv({}))
-        .on('data', (data) => result.push(data))
-        .on('end', () => {
-          console.log(result);
-          res
-            .status(200)
-            .json({ message: 'File uploaded successfully', data: result });
-        });
+
+      const processedDataPromise = new Promise((resolve, reject) => {
+        bufferStream
+          .pipe(csv({}))
+          .on('data', (data) => {
+            let email = Object.keys(data)[0];
+            data.email = data[email];
+            delete data[email];
+            result.push(data);
+          })
+          .on('end', () => {
+            resolve(result);
+          })
+          .on('error', (error) => {
+            reject(error);
+          });
+      });
+
+      try {
+        const validatedData = validateUserData(await processedDataPromise);
+        const processedData = processUserData(validatedData);
+        for (const entry of processedData) {
+          await createUser(entry);
+        }
+        res.status(200).json({ status: 0, data: processedData });
+      } catch (error) {
+        console.error(error);
+        res.status(400).json({ error: error.message });
+      }
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Internal Server Error' });

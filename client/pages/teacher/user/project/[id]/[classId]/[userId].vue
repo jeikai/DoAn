@@ -36,7 +36,7 @@
                     <div v-if="projectInfo.type == 1 && isExamination == true">
                         <div class="mt-4">
                             <span class="font-medium text-sm">Defense Score: </span>
-                            <span>{{ listMark.defense }}</span>
+                            <span>{{ listMark.sumDefense }}</span>
                         </div>
                     </div>
                     <div v-else-if="projectInfo.type == 1">
@@ -184,29 +184,41 @@
                                         @click="isOpenViewMark = false" />
                                 </div>
                             </template>
+
                             <UTable :columns="columns" :rows="listViewMark" :sort="{ column: 'title' }">
                             </UTable>
+                            <UButton @click="exportToPdf"> Export </UButton>
                         </UCard>
                     </UModal>
                 </div>
             </template>
+            <div style="display: none;">
+                <div id="pdfContent">
+                    <MarkForm :listMark="listMark"></MarkForm>
+                </div>
+            </div>
         </div>
     </TeacherLayout>
 </template>
 
 <script setup lang="ts">
 import TeacherLayout from '~/layouts/TeacherLayout.vue';
+import MarkForm from './form.vue'
 import axios from 'axios';
 import { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-sugar.css';
 import type { FormSubmitEvent } from "@nuxt/ui/dist/runtime/types";
 import * as z from 'zod';
+import html2pdf from 'html2pdf.js';
+import { ref, onMounted, defineProps } from 'vue';
+
 const route = useRoute()
 const toast = useToast();
 const isOpenAccept = ref(false);
 const isOpenMark = ref(false);
 const isOpenViewMark = ref(false);
-const isExamination = ref(false);
+let isExamination = ref(false);
+
 const projectInfo = ref({
     _id: '',
     projectName: '',
@@ -243,7 +255,7 @@ const state = ref({
 })
 const mark = ref({
     mark: 0,
-    type: isExamination.value == true ? 2 : 1,
+    type: 1,
     comment: ''
 });
 const typeOptions = [
@@ -312,11 +324,10 @@ async function loadData() {
         const response_file = await axios.get(`http://localhost:5000/api/upload/${id}`);
         const response_class = await axios.get(`http://localhost:5000/api/class/getDetail/${classId}`);
         const response_mark = await axios.get(`http://localhost:5000/api/mark/${id}`)
-        console.log(response_class)
         if (teacherId != response_class.data.teacherId._id) {
             isExamination.value = true;
+            mark.value.type = 2;
         }
-        console.log(isExamination)
         file.value = response_file.data[0];
         const projectData = response.data[0];
         projectInfo.value = {
@@ -342,7 +353,7 @@ async function loadData() {
                     }
                     break;
                 case 2:
-                    if (markData.teacherId == teacherId && isExamination) {
+                    if (markData.teacherId == teacherId && isExamination.value) {
                         listMark.value.defense = markData.mark;
                         mark.value.mark = markData.mark;
                         mark.value.comment = markData.comment;
@@ -361,7 +372,7 @@ async function loadData() {
                     break;
             }
         });
-        console.log(mark, listMark)
+        console.log(mark)
     } catch (error) {
         console.error(error);
     }
@@ -393,6 +404,7 @@ async function submitMark(event: FormSubmitEvent<Schema>) {
         'Content-Type': 'application/json'
     };
     try {
+        console.log(event.data)
         const selectedType = typeOptions.find((t) => t._id == event.data.type);
         if (selectedType) {
             event.data.type = selectedType._id;
@@ -480,6 +492,27 @@ watch(() => mark.value.type, (newValue, oldValue) => {
 function getTypeLabel(type) {
     return listOfType.find(t => t._id === type)?.type || '';
 }
+
+function exportToPdf() {
+    if (process.client) {
+        const pdfContentElement = document.getElementById('pdfContent');
+        if (pdfContentElement) {
+            const options = {
+                margin: 10,
+                filename: 'export.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            };
+            html2pdf(pdfContentElement, options);
+        } else {
+            console.error('pdfContent element not found');
+        }
+    } else {
+        console.error('Export to PDF should only be done on the client side.');
+    }
+}
+
 </script>
 <style>
 .icon-text {
@@ -489,5 +522,105 @@ function getTypeLabel(type) {
 
 .ml-2 {
     margin-left: 0.5rem;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    text-indent: 0;
+}
+
+.s1 {
+    color: black;
+    font-family: "Times New Roman", serif;
+    font-style: normal;
+    font-weight: normal;
+    text-decoration: none;
+    font-size: 12pt;
+}
+
+.s2 {
+    color: black;
+    font-family: "Times New Roman", serif;
+    font-style: normal;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 12pt;
+}
+
+.s3 {
+    color: black;
+    font-family: "Times New Roman", serif;
+    font-style: normal;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 13pt;
+}
+
+.s4 {
+    color: black;
+    font-family: "Times New Roman", serif;
+    font-style: italic;
+    font-weight: normal;
+    text-decoration: none;
+    font-size: 14pt;
+}
+
+h1 {
+    color: black;
+    font-family: "Times New Roman", serif;
+    font-style: normal;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 12pt;
+}
+
+p {
+    color: black;
+    font-family: "Times New Roman", serif;
+    font-style: normal;
+    font-weight: normal;
+    text-decoration: none;
+    font-size: 12pt;
+    margin: 0pt;
+}
+
+.s5 {
+    color: black;
+    font-family: "Times New Roman", serif;
+    font-style: italic;
+    font-weight: normal;
+    text-decoration: none;
+    font-size: 12pt;
+}
+
+li {
+    display: block;
+}
+
+#l1 {
+    padding-left: 0pt;
+    counter-reset: c1 5;
+}
+
+#l1>li>*:first-child:before {
+    counter-increment: c1;
+    content: counter(c1, decimal)". ";
+    color: black;
+    font-family: 'YourVietnameseFont', sans-serif;
+    font-style: normal;
+    font-weight: normal;
+    text-decoration: none;
+    font-size: 12pt;
+}
+
+#l1>li:first-child>*:first-child:before {
+    counter-increment: c1 0;
+}
+
+table,
+tbody {
+    vertical-align: top;
+    overflow: visible;
 }
 </style>
