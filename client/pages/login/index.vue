@@ -2,14 +2,7 @@
   <div class="login-wrapper">
     <div class="wrapper">
       <form @submit.prevent="submit">
-        <div class="flex justify-center">
-          <img
-            src="../../assets/images/logo.png"
-            class="w-10 h-10"
-            alt="Logo"
-          />
-          <h1>Login</h1>
-        </div>
+        <h1>Login</h1>
         <div class="input-box">
           <input
             type="text"

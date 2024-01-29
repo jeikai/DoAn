@@ -11,7 +11,6 @@
     "start:server": "cd server && npm start"
   },
   "dependencies": {
-    "concurrently": "^6.5.1",
-    "puppeteer": "^21.9.0"
+    "concurrently": "^6.5.1"
   }
 }
