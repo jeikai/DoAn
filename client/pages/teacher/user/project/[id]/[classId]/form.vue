@@ -90,8 +90,7 @@
             text-align: center;
           "
         >
-          Hà Nội, ngày {{ currentDate.getDate() }} tháng {{ currentMonth }} năm
-          {{ currentDate.getFullYear() }}
+          Hà Nội, ngày tháng {{ currentMonth }} năm
         </p>
       </td>
     </tr>
