@@ -39,8 +39,8 @@ exports.getDetail = async function(classId){
         const classData = await Class.findById(classId)
         .populate('teacherId')
         .populate('listUser')
-        .populate('examinationBoard');
-        return classData
+        .populate('examinationBoard'); 
+        return classData 
     }else{
         const classes = await Class.find()
         return classes

@@ -62,6 +62,12 @@
                             <span class="font-medium text-sm">Final Project Score: </span>
                             <span>{{ listMark.final }}</span>
                         </div>
+                        <div v-if="projectInfo.type == 1 && isDone == true">
+                            <div class="mt-4">
+                                <span class="font-medium text-sm">Result: </span>
+                                <span>{{ isPass }}</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="mt-4"></div>
                 </div>
@@ -203,7 +209,7 @@
             </template>
             <div style="display: none">
                 <div id="pdfContent">
-                    <MarkForm :listMark="listMark"></MarkForm>
+                    <MarkForm :listMark="responseMark" :projectName="projectInfo.projectName" :studentInfo="studentInfo" :className="className"></MarkForm>
                 </div>
             </div>
         </div>
@@ -218,9 +224,6 @@ import { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-sugar.css';
 import type { FormSubmitEvent } from '@nuxt/ui/dist/runtime/types';
 import * as z from 'zod';
-import html2pdf from 'html2pdf.js';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { ref, onMounted, defineProps } from 'vue';
 
 const route = useRoute();
@@ -325,8 +328,11 @@ const listViewMark = ref([
         comment: '',
     },
 ]);
-
+const studentInfo = ref();
+const className = ref();
 const file = ref<any>();
+const isPass = ref<any>();
+const isDone = ref<any>();
 async function loadData() {
     try {
         const teacherId = localStorage.getItem('_id');
@@ -345,12 +351,31 @@ async function loadData() {
         const response_mark = await axios.get(
             `http://localhost:5000/api/mark/${id}`
         );
+        const response_user = await axios.get(`http://localhost:5000/api/user/getUserInfor/${userId}`);
+        studentInfo.value = response_user.data.userData
+        className.value = response_class.data.className
+
         if (teacherId != response_class.data.teacherId._id) {
             isExamination.value = true;
             mark.value.type = 2;
         }
         file.value = response_file.data[0];
         const projectData = response.data[0];
+
+        if (response_mark.data && response_mark.data.length > 0) {
+            const allTypesPresent = listOfType.every((typeObj) =>
+                response_mark.data.some((markData) => markData.type === typeObj._id)
+            );
+            isDone.value = allTypesPresent;
+            const isFinalMarkPass = response_mark.data.some((markData) => {
+                return markData.type === 5 && markData.mark >= 5.5;
+            });
+
+            isPass.value = isFinalMarkPass ? 'Pass' : 'Fail';
+        } else {
+            isDone.value = false;
+        }
+
         projectInfo.value = {
             ...projectData,
             isApproved: projectData.isApproved
@@ -359,6 +384,7 @@ async function loadData() {
         };
         state.value.deadline = formattedDOB.value;
         responseMark.value = response_mark.data;
+        console.log(responseMark)
         listViewMark.value = response_mark.data.map((markData) => ({
             ...markData,
             type: getTypeLabel(markData.type),
@@ -395,7 +421,6 @@ async function loadData() {
                     break;
             }
         });
-        console.log(mark);
     } catch (error) {
         console.error(error);
     }
@@ -536,29 +561,17 @@ function getTypeLabel(type) {
 }
 
 async function exportToPdf() {
-
     const pdfContentElement = document.getElementById('pdfContent');
-    // const options = {
-    //     margin: 10,
-    //     filename: 'export.pdf',
-    //     image: { type: 'jpeg', quality: 0.98 },
-    //     html2canvas: { scale: 2 },
-    //     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    // };
-    // html2pdf(pdfContentElement, options);
+    const encodeHTML = encodeURIComponent(pdfContentElement?.outerHTML)
     try {
-        const canvas = await html2canvas(pdfContentElement)
-        const imgData = canvas.toDataURL("image/png");
-        const pdf = new jsPDF({
-            orientation: "portrait",
-            unit: "px",
-            format: "a4",
-        });
-        const width = pdf.internal.pageSize.getWidth();
-        const height = ( canvas.height * width) / canvas.width;
-        pdf.addImage(imgData, "PNG", 0, 0, width, height);
-        pdf.save("export.pdf")
+        const response = await axios.post(
+            `http://localhost:5000/api/mark/exportToPDF`, { html_data: encodeHTML }
+        );
+        if (response.data) {
+            toast.success(response.data.msg + " at " + response.data.data)
+        }
     } catch (error) {
+        toast.error(error)
         console.log(error)
     }
 }
@@ -571,105 +584,5 @@ async function exportToPdf() {
 
 .ml-2 {
     margin-left: 0.5rem;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    text-indent: 0;
-}
-
-.s1 {
-    color: black;
-    font-family: 'Times New Roman', serif;
-    font-style: normal;
-    font-weight: normal;
-    text-decoration: none;
-    font-size: 12pt;
-}
-
-.s2 {
-    color: black;
-    font-family: 'Times New Roman', serif;
-    font-style: normal;
-    font-weight: bold;
-    text-decoration: none;
-    font-size: 12pt;
-}
-
-.s3 {
-    color: black;
-    font-family: 'Times New Roman', serif;
-    font-style: normal;
-    font-weight: bold;
-    text-decoration: none;
-    font-size: 13pt;
-}
-
-.s4 {
-    color: black;
-    font-family: 'Times New Roman', serif;
-    font-style: italic;
-    font-weight: normal;
-    text-decoration: none;
-    font-size: 14pt;
-}
-
-h1 {
-    color: black;
-    font-family: 'Times New Roman', serif;
-    font-style: normal;
-    font-weight: bold;
-    text-decoration: none;
-    font-size: 12pt;
-}
-
-p {
-    color: black;
-    font-family: 'Times New Roman', serif;
-    font-style: normal;
-    font-weight: normal;
-    text-decoration: none;
-    font-size: 12pt;
-    margin: 0pt;
-}
-
-.s5 {
-    color: black;
-    font-family: 'Times New Roman', serif;
-    font-style: italic;
-    font-weight: normal;
-    text-decoration: none;
-    font-size: 12pt;
-}
-
-li {
-    display: block;
-}
-
-#l1 {
-    padding-left: 0pt;
-    counter-reset: c1 5;
-}
-
-#l1>li>*:first-child:before {
-    counter-increment: c1;
-    content: counter(c1, decimal) '. ';
-    color: black;
-    font-family: 'YourVietnameseFont', sans-serif;
-    font-style: normal;
-    font-weight: normal;
-    text-decoration: none;
-    font-size: 12pt;
-}
-
-#l1>li:first-child>*:first-child:before {
-    counter-increment: c1 0;
-}
-
-table,
-tbody {
-    vertical-align: top;
-    overflow: visible;
 }
 </style>

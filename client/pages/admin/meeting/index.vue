@@ -1,15 +1,39 @@
 <template>
     <AdminLayout>
-        Hello
+        <img src="../../../assets/images/logo.png" alt="">
+        <vue-webrtc v-if="hasJoined" width="100%" roomId="sample-room" ref="webrtc" />
+        <input type="text" v-model="roomId" placeholder="Enter room ID">
+        <button @click="toggleRoom">{{ hasJoined ? 'Leave Room' : 'Join Room' }}</button>
+        <button @click="screenShare" v-if="hasJoined">Share your screen</button>
     </AdminLayout>
 </template>
-
+  
 <script setup>
-import AdminLayout from '../layouts/AdminLayout.vue';
+import { ref, onMounted } from 'vue';
+import AdminLayout from '~/layouts/AdminLayout.vue';
+import { VueWebRTC } from 'vue-webrtc';
 
+const roomId = ref('');
+const hasJoined = ref(false);
+let webrtcInstance;
 
-</script> 
+const toggleRoom = () => {
+    if (hasJoined.value) {
+        webrtcInstance.leave();
+        hasJoined.value = false;
+    } else {
+        webrtcInstance.join();
+        hasJoined.value = true;
+    }
+};
 
-<style lang="scss" scoped>
+const screenShare = () => {
+    webrtcInstance.shareScreen();
+};
 
-</style>
+onMounted(() => {
+    webrtcInstance = $refs.webrtc;
+});
+</script>
+  
+<style lang="scss" scoped></style>

@@ -18,7 +18,7 @@ exports.create = async function(teacherId,mark){
         mark: mark.mark,
         type: mark.type, 
         teacherId: teacherId,
-        comment: mark.comment,
+        comment: mark.comment, 
         date_created: new Date()
     }
     const newMark = Mark(data)
@@ -28,7 +28,7 @@ exports.create = async function(teacherId,mark){
 
 exports.get = async function(markId){
     try{
-        const mark = await Mark.findById(markId)
+        const mark = await Mark.findById(markId).populate('teacherId')
         return mark
     }catch(err){
         return err

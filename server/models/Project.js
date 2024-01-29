@@ -83,9 +83,25 @@ exports.addMark = async function (projectId, markId) {
 
 exports.listMark = async function (projectId) {
   try {
-    debugger;
-    const project = await Project.findById(projectId).populate('listMark');
-    const marks = project.listMark;
+    const project = await Project.findById(projectId).populate({
+      path: 'listMark',
+      populate: {
+        path: 'teacherId',
+        select: '_id name'
+      }
+    });
+
+    const marks = project.listMark.map(mark => ({
+      _id: mark._id,
+      mark: mark.mark,
+      type: mark.type,
+      teacherId: mark.teacherId._id,
+      teacherName: mark.teacherId.name,
+      comment: mark.comment,
+      date_created: mark.date_created,
+      __v: mark.__v
+    }));
+
     return marks;
   } catch (err) {
     return err;

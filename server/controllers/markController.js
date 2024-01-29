@@ -1,6 +1,9 @@
 const markModel = require('../models/Mark')
 const projectModel = require('../models/Project')
-const utility = require('../helper/utility')
+const fs = require('fs');
+const HTMLToPDF = require('convert-html-to-pdf').default;
+const path = require('path');
+const os = require('os');
 
 exports.addMark = async function (req, res) {
     try {
@@ -146,6 +149,26 @@ exports.listMark = async function (req, res) {
         const marks = await projectModel.listMark(projectId)
         return res.status(200).json(marks)
     } catch (e) {
-        return res.status(500).json({ message: e })
+        return res.status(500).json({ message: e }) 
     }
 }
+
+exports.exportToPDF = async function (req, res) {
+    try {
+        const htmlString = decodeURIComponent(req.body.html_data);
+        const htmlToPDF = new HTMLToPDF(htmlString);
+        const pdf = await htmlToPDF.convert({ waitForNetworkIdle: true, browserOptions: { defaultViewport: { width: 1920, height: 1080 } }, pdfOptions: { height: 1200, width: 900, timeout: 0 } });
+        const downloadsPath = path.join(os.homedir(), 'Downloads', 'test.pdf');
+
+        fs.writeFile(downloadsPath, pdf, (err) => {
+            if (err) {
+                console.error(err);
+                return res.status(400).send({ msg: "Save failed" });
+            }
+            res.status(200).send({ msg: "Save success", data: downloadsPath });
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};

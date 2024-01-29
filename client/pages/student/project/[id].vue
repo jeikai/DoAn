@@ -54,6 +54,12 @@
                             <span class="font-medium text-sm">Final Project Score: </span>
                             <span>{{ listMark.final }}</span>
                         </div>
+                        <div v-if="projectInfo.type == 1 && isDone == true">
+                            <div class="mt-4">
+                                <span class="font-medium text-sm">Result: </span>
+                                <span>{{ isPass }}</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="mt-4">
                     </div>
@@ -170,6 +176,8 @@ const state = ref({
     type: 0,
     description: '',
 })
+const isPass = ref<any>();
+const isDone = ref<any>();
 
 const fileList = ref([]);
 const headers = {
@@ -268,6 +276,19 @@ async function loadData() {
             projectName: projectInfo.value.projectName,
             type: projectInfo.value.type,
             description: projectInfo.value.description
+        }
+        if (response_mark.data && response_mark.data.length > 0) {
+            const allTypesPresent = listOfType.every((typeObj) =>
+                response_mark.data.some((markData) => markData.type === typeObj._id)
+            );
+            isDone.value = allTypesPresent;
+            const isFinalMarkPass = response_mark.data.some((markData) => {
+                return markData.type === 5 && markData.mark >= 5.5;
+            });
+
+            isPass.value = isFinalMarkPass ? 'Pass' : 'Fail';
+        } else {
+            isDone.value = false;
         }
         if (projectInfo.type == 1) {
             listViewMark.value = response_mark.data.map(markData => ({
