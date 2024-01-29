@@ -11,12 +11,12 @@ exports.addMark = async function (req, res) {
         const studentId = req.params.studentId
         const teacherId = req.params.teacherId
         const projectId = req.params.projectId
-        const projectType = await projectModel.getProjectByUserIdAndType(studentId, 1);
+        const project = await projectModel.get(studentId, projectId);
+        const projectType = project && project.type === 1;
         const marks = await projectModel.listMark(projectId);
 
         const checkMark = marks.filter(item => item.type === data.type && item.teacherId.toString() == teacherId);
         if (checkMark.length >= 1) {
-            console.log(checkMark)
             const markId = checkMark[0]._id;
             const result = await markModel.update(markId, data);
             const updatedMarks = await projectModel.listMark(projectId);
@@ -149,7 +149,7 @@ exports.listMark = async function (req, res) {
         const marks = await projectModel.listMark(projectId)
         return res.status(200).json(marks)
     } catch (e) {
-        return res.status(500).json({ message: e }) 
+        return res.status(500).json({ message: e })
     }
 }
 
