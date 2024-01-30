@@ -9,7 +9,10 @@ const ProjectSchema = new Schema({
   isApproved: { type: Boolean, default: false },
   isDenied: { type: Boolean, default: false },
   listMark: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Mark' }],
-  date_created: Date,
+  date_created: {
+    type: Date,
+    default: () => new Date(Date.now() + 7 * 60 * 60 * 1000), // Add 7 hours to convert to Vietnam time
+  },
   deadline: {
     type: Date,
     default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -25,7 +28,7 @@ exports.create = async function (userId, project) {
     userId: userId,
     type: project.type,
     description: project.description,
-    date_created: new Date(),
+    date_created: new Date(Date.now() + 7 * 60 * 60 * 1000),
   };
   const newProject = Project(data);
   await newProject.save();
@@ -87,11 +90,11 @@ exports.listMark = async function (projectId) {
       path: 'listMark',
       populate: {
         path: 'teacherId',
-        select: '_id name'
-      }
+        select: '_id name',
+      },
     });
 
-    const marks = project.listMark.map(mark => ({
+    const marks = project.listMark.map((mark) => ({
       _id: mark._id,
       mark: mark.mark,
       type: mark.type,
@@ -99,7 +102,7 @@ exports.listMark = async function (projectId) {
       teacherName: mark.teacherId.name,
       comment: mark.comment,
       date_created: mark.date_created,
-      __v: mark.__v
+      __v: mark.__v,
     }));
 
     return marks;
