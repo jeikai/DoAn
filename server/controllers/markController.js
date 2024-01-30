@@ -12,7 +12,7 @@ exports.addMark = async function (req, res) {
         const teacherId = req.params.teacherId
         const projectId = req.params.projectId
         const project = await projectModel.get(studentId, projectId);
-        const projectType = project && project.type === 1;
+        const projectType = project[0] && project[0].type == 1;
         const marks = await projectModel.listMark(projectId);
 
         const checkMark = marks.filter(item => item.type === data.type && item.teacherId.toString() == teacherId);
@@ -63,16 +63,19 @@ exports.addMark = async function (req, res) {
             type: data.type,
             comment: data.comment,
         });
+
+        const updatedProject = await projectModel.addMark(projectId, newMark._id)
         if (projectType) {
             const updatedMarks = await projectModel.listMark(projectId);
             let processMark = 0;
             const processMarkType = 3;
             const existingProcessMark = updatedMarks.find(item => item.type === processMarkType);
+
             const project = await projectModel.getApprovedProjectsByUserId(studentId);
             const marksProject1 = await projectModel.listMark(project[0]._id);
             const marksProject2 = await projectModel.listMark(project[1]._id);
             const executionMarks = marksProject1.concat(marksProject2)
-                .filter(item => item.type === 1)
+                .filter(item => item.type === 1) 
                 .map(item => item.mark);
 
             const guidanceMarks = marksProject1.concat(marksProject2)
@@ -106,6 +109,7 @@ exports.addMark = async function (req, res) {
             const defenseMarkType = 4;
             const existingDefenseMark = updatedMarks.find(item => item.type === defenseMarkType);
             defenseMark = type2Marks.length > 0 ? (type2Marks.reduce((sum, mark) => sum + mark.mark, 0) / type2Marks.length).toFixed(1) : 0;
+            console.log(defenseMark)
             if (existingDefenseMark) {
                 await markModel.update(existingDefenseMark._id, { mark: defenseMark });
             } else {
@@ -134,7 +138,6 @@ exports.addMark = async function (req, res) {
         if (!newMark) {
             return res.status(500).json({ message: 'error' })
         } else {
-            const updatedProject = await projectModel.addMark(projectId, newMark._id)
             return res.status(200).json({ updatedProject, state: 0 })
         }
     } catch (e) {
