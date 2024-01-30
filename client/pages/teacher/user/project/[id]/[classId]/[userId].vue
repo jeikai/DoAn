@@ -225,7 +225,7 @@ import 'vue-toast-notification/dist/theme-sugar.css';
 import type { FormSubmitEvent } from '@nuxt/ui/dist/runtime/types';
 import * as z from 'zod';
 import { ref, onMounted, defineProps } from 'vue';
-
+ 
 const route = useRoute();
 const toast = useToast();
 const isOpenAccept = ref(false);

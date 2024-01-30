@@ -5,45 +5,16 @@ const HTMLToPDF = require('convert-html-to-pdf').default;
 const path = require('path');
 const os = require('os');
 
-// Helper functions
-const calculateAverage = (marks) => {
-  if (marks.length === 0) return 0;
-  const sum = marks.reduce((sum, mark) => sum + mark, 0);
-  return (sum / marks.length).toFixed(1);
-};
-
-const getMarksByType = (marks, type) => {
-  return marks.filter((item) => item.type === type).map((item) => item.mark);
-};
-
-const updateOrCreateMark = async (
-  existingMark,
-  teacherId,
-  mark,
-  type,
-  projectId
-) => {
-  if (existingMark) {
-    await markModel.update(existingMark._id, { mark });
-  } else {
-    const newMark = await markModel.create(teacherId, {
-      mark,
-      type,
-      comment: '',
-    });
-    await projectModel.addMark(projectId, newMark._id);
-  }
-};
-
-// Main function
 exports.addMark = async function (req, res) {
   try {
     const data = req.body;
     const studentId = req.params.studentId;
     const teacherId = req.params.teacherId;
     const projectId = req.params.projectId;
-    const project = await projectModel.get(studentId, projectId);
-    const projectType = project && project.type === 1;
+    const projectType = await projectModel.getProjectByUserIdAndType(
+      studentId,
+      1
+    );
     const marks = await projectModel.listMark(projectId);
 
     const checkMark = marks.filter(
@@ -51,63 +22,68 @@ exports.addMark = async function (req, res) {
         item.type === data.type && item.teacherId.toString() == teacherId
     );
     if (checkMark.length >= 1) {
+      console.log(checkMark);
       const markId = checkMark[0]._id;
       const result = await markModel.update(markId, data);
       const updatedMarks = await projectModel.listMark(projectId);
       if (projectType) {
+        const processMarkType = 3;
+        const existingProcessMark = updatedMarks.find(
+          (item) => item.type === processMarkType
+        );
         const project = await projectModel.getApprovedProjectsByUserId(
           studentId
         );
         const marksProject1 = await projectModel.listMark(project[0]._id);
         const marksProject2 = await projectModel.listMark(project[1]._id);
-        const executionMarks = getMarksByType(
-          marksProject1.concat(marksProject2),
-          1
-        );
-        const guidanceMarks = getMarksByType(
-          marksProject1.concat(marksProject2),
-          0
-        );
+        const executionMarks = marksProject1
+          .concat(marksProject2)
+          .filter((item) => item.type === 1)
+          .map((item) => item.mark);
 
-        const avgExecutionMark = calculateAverage(executionMarks);
-        const avgGuidanceMark = calculateAverage(guidanceMarks);
+        const guidanceMarks = marksProject1
+          .concat(marksProject2)
+          .filter((item) => item.type === 0)
+          .map((item) => item.mark);
+
+        const avgExecutionMark =
+          executionMarks.length > 0
+            ? executionMarks.reduce((sum, mark) => sum + mark, 0) /
+              executionMarks.length
+            : 0;
+
+        const avgGuidanceMark =
+          guidanceMarks.length > 0
+            ? guidanceMarks.reduce((sum, mark) => sum + mark, 0) /
+              guidanceMarks.length
+            : 0;
         const processMark = (
           (avgExecutionMark + 2 * avgGuidanceMark) /
           3
         ).toFixed(1);
-        const existingProcessMark = updatedMarks.find(
-          (item) => item.type === 3
-        );
-        await updateOrCreateMark(
-          existingProcessMark,
-          teacherId,
-          processMark,
-          3,
-          projectId
-        );
+        await markModel.update(existingProcessMark._id, { mark: processMark });
 
-        const type2Marks = getMarksByType(updatedMarks, 2);
-        const defenseMark = calculateAverage(type2Marks);
+        const defenseMarkType = 4;
+        const type2Marks = updatedMarks.filter((item) => item.type === 2);
+        let defenseMark;
         const existingDefenseMark = updatedMarks.find(
-          (item) => item.type === 4
+          (item) => item.type === defenseMarkType
         );
-        await updateOrCreateMark(
-          existingDefenseMark,
-          teacherId,
-          defenseMark,
-          4,
-          projectId
-        );
+        defenseMark =
+          type2Marks.length > 0
+            ? (
+                type2Marks.reduce((sum, mark) => sum + mark.mark, 0) /
+                type2Marks.length
+              ).toFixed(1)
+            : 0;
+        await markModel.update(existingDefenseMark._id, { mark: defenseMark });
 
-        const finalMark = (0.3 * processMark + 0.7 * defenseMark).toFixed(1);
-        const existingFinalMark = updatedMarks.find((item) => item.type === 5);
-        await updateOrCreateMark(
-          existingFinalMark,
-          teacherId,
-          finalMark,
-          5,
-          projectId
+        const finalMarkType = 5;
+        const existingFinalMark = updatedMarks.find(
+          (item) => item.type === finalMarkType
         );
+        let finalMark = (0.3 * processMark + 0.7 * defenseMark).toFixed(1);
+        await markModel.update(existingFinalMark._id, { mark: finalMark });
       }
       return res.status(200).json({ result, state: 1 });
     }
@@ -116,6 +92,92 @@ exports.addMark = async function (req, res) {
       type: data.type,
       comment: data.comment,
     });
+    if (projectType) {
+      const updatedMarks = await projectModel.listMark(projectId);
+      let processMark = 0;
+      const processMarkType = 3;
+      const existingProcessMark = updatedMarks.find(
+        (item) => item.type === processMarkType
+      );
+      const project = await projectModel.getApprovedProjectsByUserId(studentId);
+      const marksProject1 = await projectModel.listMark(project[0]._id);
+      const marksProject2 = await projectModel.listMark(project[1]._id);
+      const executionMarks = marksProject1
+        .concat(marksProject2)
+        .filter((item) => item.type === 1)
+        .map((item) => item.mark);
+
+      const guidanceMarks = marksProject1
+        .concat(marksProject2)
+        .filter((item) => item.type === 0)
+        .map((item) => item.mark);
+
+      const avgExecutionMark =
+        executionMarks.length > 0
+          ? executionMarks.reduce((sum, mark) => sum + mark, 0) /
+            executionMarks.length
+          : 0;
+
+      const avgGuidanceMark =
+        guidanceMarks.length > 0
+          ? guidanceMarks.reduce((sum, mark) => sum + mark, 0) /
+            guidanceMarks.length
+          : 0;
+
+      processMark = ((avgExecutionMark + 2 * avgGuidanceMark) / 3).toFixed(1);
+      if (existingProcessMark) {
+        await markModel.update(existingProcessMark._id, { mark: processMark });
+      } else {
+        const newProcessMark = await markModel.create(teacherId, {
+          mark: 0,
+          type: processMarkType,
+          comment: '',
+        });
+        await projectModel.addMark(projectId, newProcessMark._id);
+        await markModel.update(newProcessMark._id, { mark: processMark });
+      }
+
+      let defenseMark = 0;
+      const type2Marks = updatedMarks.filter((item) => item.type === 2);
+      console.log(type2Marks);
+      const defenseMarkType = 4;
+      const existingDefenseMark = updatedMarks.find(
+        (item) => item.type === defenseMarkType
+      );
+      defenseMark =
+        type2Marks.length > 0
+          ? (
+              type2Marks.reduce((sum, mark) => sum + mark.mark, 0) /
+              type2Marks.length
+            ).toFixed(1)
+          : 0;
+      if (existingDefenseMark) {
+        await markModel.update(existingDefenseMark._id, { mark: defenseMark });
+      } else {
+        const newDefenseMark = await markModel.create(teacherId, {
+          mark: defenseMark,
+          type: defenseMarkType,
+          comment: '',
+        });
+        await projectModel.addMark(projectId, newDefenseMark._id);
+      }
+
+      const finalMarkType = 5;
+      const existingFinalMark = updatedMarks.find(
+        (item) => item.type === finalMarkType
+      );
+      let finalMark = (0.3 * processMark + 0.7 * defenseMark).toFixed(1);
+      if (existingFinalMark) {
+        await markModel.update(existingFinalMark._id, { mark: finalMark });
+      } else {
+        const newFinalMark = await markModel.create(teacherId, {
+          mark: finalMark,
+          type: finalMarkType,
+          comment: '',
+        });
+        await projectModel.addMark(projectId, newFinalMark._id);
+      }
+    }
     if (!newMark) {
       return res.status(500).json({ message: 'error' });
     } else {
@@ -127,188 +189,6 @@ exports.addMark = async function (req, res) {
     return res.status(500).json({ message: e });
   }
 };
-
-// exports.addMark = async function (req, res) {
-//   try {
-//     const data = req.body;
-//     const studentId = req.params.studentId;
-//     const teacherId = req.params.teacherId;
-//     const projectId = req.params.projectId;
-//     const project = await projectModel.get(studentId, projectId);
-//     const projectType = project && project.type === 1;
-//     const marks = await projectModel.listMark(projectId);
-
-//     const checkMark = marks.filter(
-//       (item) =>
-//         item.type === data.type && item.teacherId.toString() == teacherId
-//     ); //hằng này có tác dụng kiểm tra xem giáo viên đã đánh giá cho sinh viên này chưa
-//     if (checkMark.length >= 1) {
-//       console.log(checkMark);
-//       const markId = checkMark[0]._id;
-//       const result = await markModel.update(markId, data);
-//       const updatedMarks = await projectModel.listMark(projectId);
-//       if (projectType) {
-//         const processMarkType = 3;
-//         const existingProcessMark = updatedMarks.find(
-//           (item) => item.type === processMarkType
-//         );
-//         const project = await projectModel.getApprovedProjectsByUserId(
-//           studentId
-//         );
-//         const marksProject1 = await projectModel.listMark(project[0]._id);
-//         const marksProject2 = await projectModel.listMark(project[1]._id);
-//         const executionMarks = marksProject1
-//           .concat(marksProject2)
-//           .filter((item) => item.type === 1)
-//           .map((item) => item.mark);
-
-//         const guidanceMarks = marksProject1
-//           .concat(marksProject2)
-//           .filter((item) => item.type === 0)
-//           .map((item) => item.mark);
-
-//         const avgExecutionMark =
-//           executionMarks.length > 0
-//             ? executionMarks.reduce((sum, mark) => sum + mark, 0) /
-//               executionMarks.length
-//             : 0;
-
-//         const avgGuidanceMark =
-//           guidanceMarks.length > 0
-//             ? guidanceMarks.reduce((sum, mark) => sum + mark, 0) /
-//               guidanceMarks.length
-//             : 0;
-//         const processMark = (
-//           (avgExecutionMark + 2 * avgGuidanceMark) /
-//           3
-//         ).toFixed(1);
-//         await markModel.update(existingProcessMark._id, { mark: processMark });
-
-//         const defenseMarkType = 4;
-//         const type2Marks = updatedMarks.filter((item) => item.type === 2);
-//         let defenseMark;
-//         const existingDefenseMark = updatedMarks.find(
-//           (item) => item.type === defenseMarkType
-//         );
-//         defenseMark =
-//           type2Marks.length > 0
-//             ? (
-//                 type2Marks.reduce((sum, mark) => sum + mark.mark, 0) /
-//                 type2Marks.length
-//               ).toFixed(1)
-//             : 0;
-//         await markModel.update(existingDefenseMark._id, { mark: defenseMark });
-
-//         const finalMarkType = 5;
-//         const existingFinalMark = updatedMarks.find(
-//           (item) => item.type === finalMarkType
-//         );
-//         let finalMark = (0.3 * processMark + 0.7 * defenseMark).toFixed(1);
-//         await markModel.update(existingFinalMark._id, { mark: finalMark });
-//       }
-//       return res.status(200).json({ result, state: 1 });
-//     }
-//     const newMark = await markModel.create(teacherId, {
-//       mark: parseFloat(data.mark),
-//       type: data.type,
-//       comment: data.comment,
-//     });
-//     if (projectType) {
-//       const updatedMarks = await projectModel.listMark(projectId);
-//       let processMark = 0;
-//       const processMarkType = 3;
-//       const existingProcessMark = updatedMarks.find(
-//         (item) => item.type === processMarkType
-//       );
-//       const project = await projectModel.getApprovedProjectsByUserId(studentId);
-//       const marksProject1 = await projectModel.listMark(project[0]._id);
-//       const marksProject2 = await projectModel.listMark(project[1]._id);
-//       const executionMarks = marksProject1
-//         .concat(marksProject2)
-//         .filter((item) => item.type === 1)
-//         .map((item) => item.mark);
-
-//       const guidanceMarks = marksProject1
-//         .concat(marksProject2)
-//         .filter((item) => item.type === 0)
-//         .map((item) => item.mark);
-
-//       const avgExecutionMark =
-//         executionMarks.length > 0
-//           ? executionMarks.reduce((sum, mark) => sum + mark, 0) /
-//             executionMarks.length
-//           : 0;
-
-//       const avgGuidanceMark =
-//         guidanceMarks.length > 0
-//           ? guidanceMarks.reduce((sum, mark) => sum + mark, 0) /
-//             guidanceMarks.length
-//           : 0;
-
-//       processMark = ((avgExecutionMark + 2 * avgGuidanceMark) / 3).toFixed(1);
-//       if (existingProcessMark) {
-//         await markModel.update(existingProcessMark._id, { mark: processMark });
-//       } else {
-//         const newProcessMark = await markModel.create(teacherId, {
-//           mark: 0,
-//           type: processMarkType,
-//           comment: '',
-//         });
-//         await projectModel.addMark(projectId, newProcessMark._id);
-//       }
-
-//       let defenseMark = 0;
-//       const type2Marks = updatedMarks.filter((item) => item.type === 2);
-//       console.log(type2Marks);
-//       const defenseMarkType = 4;
-//       const existingDefenseMark = updatedMarks.find(
-//         (item) => item.type === defenseMarkType
-//       );
-//       defenseMark =
-//         type2Marks.length > 0
-//           ? (
-//               type2Marks.reduce((sum, mark) => sum + mark.mark, 0) /
-//               type2Marks.length
-//             ).toFixed(1)
-//           : 0;
-//       if (existingDefenseMark) {
-//         await markModel.update(existingDefenseMark._id, { mark: defenseMark });
-//       } else {
-//         const newDefenseMark = await markModel.create(teacherId, {
-//           mark: defenseMark,
-//           type: defenseMarkType,
-//           comment: '',
-//         });
-//         await projectModel.addMark(projectId, newDefenseMark._id);
-//       }
-
-//       const finalMarkType = 5;
-//       const existingFinalMark = updatedMarks.find(
-//         (item) => item.type === finalMarkType
-//       );
-//       let finalMark = (0.3 * processMark + 0.7 * defenseMark).toFixed(1);
-//       if (existingFinalMark) {
-//         await markModel.update(existingFinalMark._id, { mark: finalMark });
-//       } else {
-//         const newFinalMark = await markModel.create(teacherId, {
-//           mark: finalMark,
-//           type: finalMarkType,
-//           comment: '',
-//         });
-//         await projectModel.addMark(projectId, newFinalMark._id);
-//       }
-//     }
-//     if (!newMark) {
-//       return res.status(500).json({ message: 'error' });
-//     } else {
-//       const updatedProject = await projectModel.addMark(projectId, newMark._id);
-//       return res.status(200).json({ updatedProject, state: 0 });
-//     }
-//   } catch (e) {
-//     console.log(e);
-//     return res.status(500).json({ message: e });
-//   }
-// };
 
 exports.listMark = async function (req, res) {
   try {
