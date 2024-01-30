@@ -2,14 +2,7 @@
   <div class="login-wrapper">
     <div class="wrapper">
       <form @submit.prevent="submit">
-        <div class="flex items-center justify-center">
-          <img
-            src="../../assets/images/logo.png"
-            class="w-10 h-10"
-            alt="Logo"
-          />
-          <h1 class="ml-2 text-2xl font-semibold text-white">Login</h1>
-        </div>
+        <h1>Login</h1>
         <div class="input-box">
           <input
             type="text"
@@ -44,9 +37,6 @@
           Login
         </button>
       </form>
-    </div>
-    <div class="copy-right">
-      © 2024 Đồ án tốt nghiệp Phạm Tài Khôi.Copyright belongs to Pham Tai Khoi
     </div>
   </div>
 </template>
@@ -117,19 +107,6 @@
     min-height: 100vh;
     background: url('../../assets/images/bg.jpg') no-repeat;
     background-position: center;
-  }
-
-  .login-wrapper {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-  }
-
-  .copy-right {
-    text-align: center;
-    padding: 10px;
-    background-color: #f5f5f5;
   }
 
   .login-wrapper .wrapper {
