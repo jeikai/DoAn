@@ -1,0 +1,16 @@
+{
+  "name": "my-project",
+  "version": "1.0.0",
+  "description": "My DATN",
+  "engines": {
+    "node": "18.14.2"
+  },
+  "scripts": {
+    "start": "concurrently \"npm run start:client\" \"npm run start:server\"",
+    "start:client": "cd client && npm run dev",
+    "start:server": "cd server && npm start"
+  },
+  "dependencies": {
+    "concurrently": "^6.5.1"
+  }
+}
